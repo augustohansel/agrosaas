@@ -1,0 +1,76 @@
+.container {
+  position: relative;
+  width: 100%;
+  min-width: 200px;
+}
+
+/* O "botão" principal que aparece na tela */
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-surface);
+  border: 1px solid #e4e4e7;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--color-text-main);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.trigger:hover, .triggerFocus {
+  border-color: var(--color-primary);
+}
+
+.triggerIcon {
+  color: var(--color-text-muted);
+  transition: transform 0.2s;
+}
+
+.triggerIconOpen {
+  transform: rotate(180deg);
+}
+
+/* O menu suspenso que flutua por cima do resto */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  background-color: var(--color-surface);
+  border: 1px solid #e4e4e7;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  z-index: 50;
+  max-height: 250px;
+  overflow-y: auto;
+  animation: slideDown 0.15s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* As opções individuais */
+.option {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-text-main);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.option:hover {
+  background-color: #f4f4f5;
+}
+
+.optionSelected {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 500;
+}

@@ -1,0 +1,317 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap');
+
+/* Tokens locais: troque pelos seus var(--color-*) se preferir */
+.container {
+  --ink: #14231b;
+  --moss: #1f4d33;
+  --moss-deep: #12301f;
+  --moss-hover: #17402a;
+  --wheat: #d8b24a;
+  --paper: #fbfcfa;
+  --line: #d9e0d9;
+  --muted: #5b6b61;
+  --danger: #b3261e;
+  --danger-bg: #fdf1f0;
+  --focus: rgba(31, 77, 51, 0.22);
+
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  min-height: 100vh;
+  font-family: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+/* ---------- Painel esquerdo: vista aérea dos talhões ---------- */
+.banner {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 3rem 3.5rem;
+  background: var(--moss-deep);
+  color: #fff;
+  isolation: isolate;
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+}
+
+.banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(to top, rgba(18, 48, 31, 0.96) 0%, rgba(18, 48, 31, 0.7) 38%, rgba(18, 48, 31, 0) 70%),
+    linear-gradient(to bottom, rgba(18, 48, 31, 0.55) 0%, rgba(18, 48, 31, 0) 22%);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: 'Bricolage Grotesque', 'Instrument Sans', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.brandMark {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.625rem;
+  background: var(--wheat);
+  color: var(--moss-deep);
+}
+
+.bannerContent {
+  max-width: 30rem;
+}
+
+.bannerTitle {
+  margin: 0 0 1rem;
+  font-family: 'Bricolage Grotesque', 'Instrument Sans', sans-serif;
+  font-size: clamp(2.25rem, 3.4vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.bannerSubtitle {
+  margin: 0 0 2rem;
+  max-width: 26rem;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.bannerFooter {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ---------- Painel direito: formulário ---------- */
+.formSection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+}
+
+.formContainer {
+  width: 100%;
+  max-width: 24rem;
+}
+
+.mobileBrand {
+  display: none;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 2.5rem;
+  font-family: 'Bricolage Grotesque', 'Instrument Sans', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.mobileBrand .brandMark {
+  background: var(--moss);
+  color: #fff;
+}
+
+.formHeader {
+  margin-bottom: 2rem;
+}
+
+.formTitle {
+  margin: 0 0 0.5rem;
+  font-family: 'Bricolage Grotesque', 'Instrument Sans', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.formSubtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 0.875rem;
+  color: #8a988f;
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  padding: 0.8125rem 1rem 0.8125rem 2.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.625rem;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.input::placeholder {
+  color: #9aa79f;
+}
+
+.input:hover {
+  border-color: #b9c5bb;
+}
+
+.input:focus {
+  border-color: var(--moss);
+  box-shadow: 0 0 0 4px var(--focus);
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.passwordInput {
+  padding-right: 3rem;
+}
+
+.toggleButton {
+  position: absolute;
+  right: 0.375rem;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: none;
+  color: #6b7a71;
+  cursor: pointer;
+}
+
+.toggleButton:hover {
+  background: #eef2ee;
+  color: var(--ink);
+}
+
+.toggleButton:focus-visible,
+.submitButton:focus-visible {
+  outline: 2px solid var(--moss);
+  outline-offset: 2px;
+}
+
+.errorBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.625rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.errorBox {
+  border: 1px solid #f3c9c5;
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.errorBox svg {
+  flex-shrink: 0;
+  margin-top: 0.0625rem;
+}
+
+.submitButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.9375rem 1rem;
+  border: none;
+  border-radius: 0.625rem;
+  background: var(--moss);
+  color: #fff;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: var(--moss-hover);
+}
+
+.submitButton:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.submitButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 2.5s; }
+  .input, .submitButton { transition: none; }
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 900px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+
+  .banner {
+    display: none;
+  }
+
+  .mobileBrand {
+    display: inline-flex;
+  }
+}

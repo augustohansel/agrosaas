@@ -1,0 +1,24 @@
+:root {
+  /* Tons Agro (Verde) */
+  --color-primary: #16a34a;        /* Verde principal */
+  --color-primary-hover: #15803d;  /* CORRIGIDO: Adicionada a variável de hover */
+  --color-primary-dark: #15803d;   /* Verde mais escuro */
+  --color-primary-light: #dcfce7;  /* Verde muito claro para fundos/ícones */
+  
+  /* Se tiver estas variáveis, mantenha-as ou ajuste-as: */
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-surface: #ffffff;
+  --color-background: #f8fafc;
+  --color-text-main: #0f172a;
+  --color-text-muted: #64748b;
+
+  /* Espaçamentos e Bordas (Mais arredondadas como na imagem) */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  
+  /* Sombras Suaves (Sem linhas duras) */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.02);
+  --shadow-card: 0 10px 20px rgba(0, 0, 0, 0.03);
+}

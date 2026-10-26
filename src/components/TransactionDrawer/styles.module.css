@@ -1,0 +1,138 @@
+.overlay {
+  position: fixed;
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.content {
+  background-color: var(--color-surface, #ffffff);
+  width: 100%;
+  max-width: 450px;
+  height: 100vh;
+  padding: 2rem;
+  box-shadow: -5px 0 25px rgba(0,0,0,0.05);
+  animation: slideIn 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #e4e4e7;
+  overflow-y: auto;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-main, #18181b);
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #71717a);
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted, #71717a);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+
+.closeButton:hover {
+  background-color: #f4f4f5;
+  color: var(--color-text-main, #18181b);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--color-text-main, #18181b);
+}
+
+.input {
+  padding: 0.75rem 1rem;
+  border: 1px solid #e4e4e7;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 0.875rem;
+  background-color: var(--color-surface, #ffffff);
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.input:focus {
+  border-color: var(--color-primary, #3b36db);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: auto;
+  padding-top: 2rem;
+}
+
+.btnCancel {
+  padding: 0.75rem 1.25rem;
+  background-color: transparent;
+  border: 1px solid #e4e4e7;
+  border-radius: var(--radius-sm, 6px);
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s;
+  color: var(--color-text-main, #18181b);
+}
+
+.btnCancel:hover {
+  background-color: #f4f4f5;
+}
+
+.btnSave {
+  padding: 0.75rem 1.25rem;
+  background-color: var(--color-primary, #3b36db);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btnSave:hover {
+  background-color: var(--color-primary-hover, #2e2ab0);
+}
+
+.btnSave:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
