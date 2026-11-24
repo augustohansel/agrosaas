@@ -4,23 +4,26 @@
   left: 0; 
   right: 0; 
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(22,38,25,.42);
+  backdrop-filter: blur(6px);
   z-index: 9999;
   display: flex;
   justify-content: flex-end;
 }
 
 .content {
-  background-color: var(--color-surface, #ffffff);
+  background-color: var(--color-surface);
   width: 100%;
   max-width: 450px;
-  height: 100vh;
-  padding: 2rem;
-  box-shadow: -5px 0 25px rgba(0,0,0,0.05);
+  height: calc(100dvh - 20px);
+  margin: 10px;
+  border-radius: 18px;
+  padding: clamp(18px, 3vw, 30px);
+  box-shadow: -15px 0 45px rgba(20,42,25,.14);
   animation: slideIn 0.3s ease-out;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid #e4e4e7;
+  border: 1px solid var(--color-line);
   overflow-y: auto;
 }
 
@@ -33,11 +36,14 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-line);
+  margin-bottom: 1.5rem;
 }
 
 .title {
-  font-size: 1.25rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.4rem;
   font-weight: 600;
   color: var(--color-text-main, #18181b);
   margin-bottom: 0.25rem;
@@ -54,7 +60,9 @@
   color: var(--color-text-muted, #71717a);
   cursor: pointer;
   padding: 0.25rem;
-  border-radius: 50%;
+  border: 1px solid var(--color-line);
+  width: 34px; height: 34px; flex-shrink: 0;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -62,7 +70,7 @@
 }
 
 .closeButton:hover {
-  background-color: #f4f4f5;
+  background-color: var(--soft);
   color: var(--color-text-main, #18181b);
 }
 
@@ -81,32 +89,35 @@
 
 .input {
   padding: 0.75rem 1rem;
-  border: 1px solid #e4e4e7;
-  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
   font-size: 0.875rem;
-  background-color: var(--color-surface, #ffffff);
+  background-color: var(--soft);
+  color: var(--color-text-main);
   outline: none;
   transition: border-color 0.2s;
   font-family: inherit;
 }
 
 .input:focus {
-  border-color: var(--color-primary, #3b36db);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .actions {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  margin-top: auto;
+  gap: .65rem;
+  flex-wrap:wrap;
+  margin-top:auto;
   padding-top: 2rem;
 }
 
 .btnCancel {
   padding: 0.75rem 1.25rem;
   background-color: transparent;
-  border: 1px solid #e4e4e7;
-  border-radius: var(--radius-sm, 6px);
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
   font-weight: 500;
   cursor: pointer;
   transition: 0.2s;
@@ -114,7 +125,7 @@
 }
 
 .btnCancel:hover {
-  background-color: #f4f4f5;
+  background-color: var(--soft);
 }
 
 .btnSave {

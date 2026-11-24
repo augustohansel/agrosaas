@@ -4,6 +4,7 @@ export interface Plot {
   id: string;
   farm_id: string;
   name: string;
+  color?: string | null;
   coordinates: any; // Mapeia o JSONB do seu banco
   created_at: string;
 }
@@ -12,7 +13,7 @@ export type CreatePlotDTO = Omit<Plot, 'id' | 'created_at'>;
 export type UpdatePlotDTO = Partial<CreatePlotDTO>;
 
 export async function getPlots(farmId: string, allFarmIds: string[] = []) {
-  let query = supabase.from('plots').select('*').order('name');
+  let query = supabase.from('plots').select('*', { count: 'exact' }).order('name').order('id');
   
   if (farmId === 'all') {
     query = query.in('farm_id', allFarmIds);
@@ -20,20 +21,24 @@ export async function getPlots(farmId: string, allFarmIds: string[] = []) {
     query = query.eq('farm_id', farmId);
   }
 
-  const { data, error } = await query;
-
-  if (error) throw error;
-  return data as Plot[];
+  const plots: Plot[] = [];
+  for (;;) {
+    const { data, error, count } = await query.range(plots.length, plots.length + 499);
+    if (error) throw error;
+    if (!data?.length) return plots;
+    plots.push(...data as Plot[]);
+    if (count !== null ? plots.length >= count : data.length < 500) return plots;
+  }
 }
 
 export async function createPlot(plot: CreatePlotDTO) {
   const { data, error } = await supabase
     .from('plots')
     .insert([plot])
-    .select();
+    .select().single();
 
   if (error) throw error;
-  return data?.[0] as Plot;
+  return data as Plot;
 }
 
 export async function updatePlot(id: string, plot: UpdatePlotDTO) {
@@ -41,10 +46,10 @@ export async function updatePlot(id: string, plot: UpdatePlotDTO) {
     .from('plots')
     .update(plot)
     .eq('id', id)
-    .select();
+    .select().single();
 
   if (error) throw error;
-  return data?.[0] as Plot;
+  return data as Plot;
 }
 
 export async function deletePlot(id: string) {

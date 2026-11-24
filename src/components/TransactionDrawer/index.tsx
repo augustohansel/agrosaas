@@ -5,6 +5,7 @@ import { createTransaction, updateTransaction, type Transaction } from '../../fe
 import { getPlots, type Plot } from '../../features/plots/services/api';
 import { useTranslation } from '../../hooks/useTranslation';
 import styles from './styles.module.css';
+import { transactionCategories } from '../../features/transactions/categories';
 
 interface TransactionDrawerProps {
   isOpen: boolean;
@@ -24,9 +25,10 @@ const defaultFormData = {
 };
 
 export function TransactionDrawer({ isOpen, onClose, farmId, transactionToEdit, onSuccess }: TransactionDrawerProps) {
-  const { t } = useTranslation();
+  const { t, tCategory } = useTranslation();
   const [formData, setFormData] = useState(defaultFormData);
   const [isSaving, setIsSaving] = useState(false);
+  const settled = Boolean(transactionToEdit?.bill);
   const [plots, setPlots] = useState<Plot[]>([]);
   const [isLoadingPlots, setIsLoadingPlots] = useState(false);
 
@@ -77,7 +79,7 @@ export function TransactionDrawer({ isOpen, onClose, farmId, transactionToEdit, 
       };
 
       if (transactionToEdit) {
-        await updateTransaction(transactionToEdit.id, payload);
+        await updateTransaction(transactionToEdit.id, settled ? { category: payload.category } : payload);
       } else {
         await createTransaction(payload);
       }
@@ -86,13 +88,16 @@ export function TransactionDrawer({ isOpen, onClose, farmId, transactionToEdit, 
       onClose();
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      alert("Erro ao salvar transação.");
+      alert(error && typeof error === 'object' && 'message' in error ? String(error.message) : "Erro ao salvar transação.");
     } finally {
       setIsSaving(false);
     }
   };
 
   if (!isOpen) return null;
+
+  const categories = [...transactionCategories[formData.type]];
+  if (!categories.includes(formData.category)) categories.push(formData.category);
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -101,18 +106,19 @@ export function TransactionDrawer({ isOpen, onClose, farmId, transactionToEdit, 
           <div>
             <h2 className={styles.title}>{transactionToEdit ? t('editEntry') : t('newEntry')}</h2>
             <p className={styles.subtitle}>
-              {transactionToEdit ? t('editEntryDesc') : t('newEntryDesc')}
+              {settled ? 'Lançamento de título liquidado. Você pode corrigir a categoria.' : transactionToEdit ? t('editEntryDesc') : t('newEntryDesc')}
             </p>
           </div>
-          <button className={styles.closeButton} onClick={onClose}>
+          <button className={styles.closeButton} onClick={onClose} aria-label={t('cancelBtn')}>
             <X size={20} />
           </button>
         </div>
         
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+          {!settled && <>
           <div className={styles.formGroup}>
-            <label>{t('movementType')}</label>
-            <CustomSelect 
+            <label htmlFor="transactiondrawer-movementType">{t('movementType')}</label>
+            <CustomSelect id="transactiondrawer-movementType" 
               value={formData.type}
               onChange={(val) => setFormData({...formData, type: val as 'income'|'expense', category: val === 'income' ? 'Venda de Grãos' : 'Adubos e Fertilizantes'})}
               options={[
@@ -123,8 +129,8 @@ export function TransactionDrawer({ isOpen, onClose, farmId, transactionToEdit, 
           </div>
 
           <div className={styles.formGroup}>
-            <label>{t('areaPlotOpt')}</label>
-            <CustomSelect 
+            <label htmlFor="transactiondrawer-areaPlotOpt">{t('areaPlotOpt')}</label>
+            <CustomSelect id="transactiondrawer-areaPlotOpt" 
               value={formData.plot_id}
               onChange={(val) => setFormData({...formData, plot_id: val})}
               options={[
@@ -138,33 +144,17 @@ export function TransactionDrawer({ isOpen, onClose, farmId, transactionToEdit, 
             />
           </div>
 
+          </>}
           <div className={styles.formGroup}>
-            <label>{t('categoryOpt')}</label>
-            <CustomSelect 
+            <label htmlFor="transactiondrawer-categoryOpt">{t('categoryOpt')}</label>
+            <CustomSelect id="transactiondrawer-categoryOpt" 
               value={formData.category}
               onChange={(val) => setFormData({...formData, category: val})}
-              options={formData.type === 'expense' ? [
-                { value: 'Adubos e Fertilizantes', label: t('catFertilizers') },
-                { value: 'Sementes', label: t('catSeeds') },
-                { value: 'Defensivos (Agrotóxicos)', label: t('catPesticides') },
-                { value: 'Combustível', label: t('catFuel') },
-                { value: 'Mão de Obra', label: t('catLabor') },
-                { value: 'Manutenção de Máquinas', label: t('catMaintenance') },
-                { value: 'Nutrição Animal', label: t('catAnimalNutrition') },
-                { value: 'Veterinário', label: t('catVet') },
-                { value: 'Impostos', label: t('catTaxes') },
-                { value: 'Outros', label: t('catOther') }
-              ] : [
-                { value: 'Venda de Soja', label: t('catSoy') },
-                { value: 'Venda de Milho', label: t('catCorn') },
-                { value: 'Venda de Grãos', label: t('catGrains') },
-                { value: 'Venda de Gado', label: t('catLivestock') },
-                { value: 'Hortaliças', label: t('catVegetables') },
-                { value: 'Outros', label: t('catOther') }
-              ]}
+              options={categories.map(value => ({ value, label: tCategory(value) }))}
             />
           </div>
 
+          {!settled && <>
           <div className={styles.formGroup}>
             <label>{t('descOpt')}</label>
             <input 
@@ -200,6 +190,7 @@ export function TransactionDrawer({ isOpen, onClose, farmId, transactionToEdit, 
             />
           </div>
 
+          </>}
           <div className={styles.actions}>
             <button type="button" className={styles.btnCancel} onClick={onClose}>{t('cancelBtn')}</button>
             <button type="submit" className={styles.btnSave} disabled={isSaving}>

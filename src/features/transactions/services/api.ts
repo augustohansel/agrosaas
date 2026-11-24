@@ -11,6 +11,7 @@ export interface Transaction {
   created_by: string;
   type: 'income' | 'expense';
   created_at?: string;
+  bill?: { id: string } | null;
   plots?: { name: string } | null; 
 }
 
@@ -36,11 +37,11 @@ export async function createTransaction(transaction: CreateTransactionDTO) {
   return data as Transaction;
 }
 
-export async function getTransactions(farmId: string, category?: string, allFarmIds: string[] = []) {
+export async function getTransactions(farmId: string, category?: string, allFarmIds: string[] = [], signal?: AbortSignal) {
   let query = supabase
     .from('transactions')
-    .select('*, plots(name)')
-    .order('transaction_date', { ascending: false });
+    .select('*, plots(name), bill:bills!bills_transaction_id_fkey(id)', { count: 'exact' })
+    .order('transaction_date', { ascending: false }).order('id');
 
   if (farmId === 'all') {
     query = query.in('farm_id', allFarmIds);
@@ -52,10 +53,15 @@ export async function getTransactions(farmId: string, category?: string, allFarm
     query = query.eq('category', category);
   }
 
-  const { data, error } = await query;
-  
-  if (error) throw error;
-  return data as Transaction[];
+  if (signal) query = query.abortSignal(signal);
+  const rows: Transaction[] = [];
+  for (;;) {
+    const { data, error, count } = await query.range(rows.length, rows.length + 499);
+    if (error) throw error;
+    if (!data?.length) return rows;
+    rows.push(...data as Transaction[]);
+    if (count !== null ? rows.length >= count : data.length < 500) return rows;
+  }
 }
 
 export async function updateTransaction(id: string, transaction: UpdateTransactionDTO) {
@@ -63,18 +69,19 @@ export async function updateTransaction(id: string, transaction: UpdateTransacti
     .from('transactions')
     .update(transaction)
     .eq('id', id)
-    .select(); 
+    .select().single();
 
   if (error) throw error;
   
-  return data && data.length > 0 ? data[0] : null;
+  return data;
 }
 
 export async function deleteTransaction(id: string) {
   const { error } = await supabase
     .from('transactions')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .select('id').single();
 
   if (error) throw error;
   return true;

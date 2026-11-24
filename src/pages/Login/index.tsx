@@ -1,65 +1,30 @@
-import { useState } from 'react';
-import {
-  Tractor,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  Loader2,
-  ArrowRight,
-  AlertCircle,
-} from 'lucide-react';
+import { useRef, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
+import type { AuthError } from '@supabase/supabase-js';
+import { AlertCircle, ArrowRight, ArrowUpRight, Eye, EyeOff, Loader2, LockKeyhole, Sprout } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import styles from './styles.module.css';
 
-/* Vista aérea estilizada de talhões: o "hero" do painel */
-function FieldsMap() {
+function Brand() {
   return (
-    <svg
-      className={styles.map}
-      viewBox="0 0 600 800"
-      preserveAspectRatio="xMidYMid slice"
-      aria-hidden="true"
-    >
-      <defs>
-        <pattern id="rows" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(18)">
-          <rect width="9" height="9" fill="none" />
-          <line x1="0" y1="0" x2="0" y2="9" stroke="rgba(0,0,0,0.16)" strokeWidth="3" />
-        </pattern>
-        <pattern id="rowsAlt" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(-62)">
-          <rect width="9" height="9" fill="none" />
-          <line x1="0" y1="0" x2="0" y2="9" stroke="rgba(0,0,0,0.14)" strokeWidth="3" />
-        </pattern>
-      </defs>
-
-      <g stroke="#12301f" strokeWidth="6" strokeLinejoin="round">
-        <polygon points="0,0 260,0 230,210 0,190" fill="#2f6b45" />
-        <polygon points="260,0 600,0 600,170 230,210" fill="#c9a43f" />
-        <polygon points="0,190 230,210 205,430 0,400" fill="#3d7a52" />
-        <polygon points="230,210 600,170 600,420 205,430" fill="#235a38" />
-        <polygon points="0,400 205,430 190,640 0,620" fill="#b88f35" />
-        <polygon points="205,430 600,420 600,650 190,640" fill="#2d6644" />
-        <polygon points="0,620 190,640 170,800 0,800" fill="#7d6236" />
-        <polygon points="190,640 600,650 600,800 170,800" fill="#2a5c3d" />
-      </g>
-
-      {/* Linhas de plantio */}
-      <g opacity="0.9">
-        <polygon points="0,0 260,0 230,210 0,190" fill="url(#rows)" />
-        <polygon points="260,0 600,0 600,170 230,210" fill="url(#rowsAlt)" />
-        <polygon points="0,190 230,210 205,430 0,400" fill="url(#rowsAlt)" />
-        <polygon points="230,210 600,170 600,420 205,430" fill="url(#rows)" />
-        <polygon points="0,400 205,430 190,640 0,620" fill="url(#rows)" />
-        <polygon points="190,640 600,650 600,800 170,800" fill="url(#rowsAlt)" />
-      </g>
-
-      {/* Pivô central */}
-      <circle cx="400" cy="540" r="104" fill="#5a9a67" stroke="#12301f" strokeWidth="4" />
-      <circle cx="400" cy="540" r="70" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="2" />
-      <line x1="400" y1="540" x2="478" y2="468" stroke="#eef3ea" strokeWidth="3" strokeLinecap="round" />
-      <circle cx="400" cy="540" r="6" fill="#eef3ea" />
-    </svg>
+    <div className={styles.brand}>
+      <span className={styles.brandMark}><Sprout size={24} aria-hidden="true" /></span>
+      <span>Gestia</span>
+    </div>
   );
+}
+
+function loginError(error: AuthError) {
+  if (error.code === 'invalid_credentials') {
+    return 'Confira seu e-mail e sua senha e tente novamente.';
+  }
+  if (error.code === 'email_not_confirmed') {
+    return 'Confirme seu e-mail pelo link recebido para acessar o painel.';
+  }
+  if (error.status === 429) {
+    return 'Muitas tentativas de acesso. Aguarde um momento e tente novamente.';
+  }
+  return 'Não foi possível entrar agora. Verifique sua conexão e tente novamente.';
 }
 
 export function Login() {
@@ -68,135 +33,94 @@ export function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const submitting = useRef(false);
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
     setLoading(true);
     setError('');
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      setError('E-mail ou senha incorretos. Confira os dados e tente novamente.');
+    try {
+      const result = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (result.error) setError(loginError(result.error));
+    } catch {
+      setError('Não foi possível conectar ao Gestia. Tente novamente em instantes.');
+    } finally {
+      submitting.current = false;
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   return (
-    <div className={styles.container}>
-      {/* Esquerda: vista aérea da fazenda */}
-      <aside className={styles.banner}>
-        <FieldsMap />
-
-        <div className={styles.brand}>
-          <span className={styles.brandMark}>
-            <Tractor size={22} />
-          </span>
-          AgroSaaS
-        </div>
-
-        <div className={styles.bannerContent}>
-          <h1 className={styles.bannerTitle}>Sua fazenda inteira, talhão por talhão.</h1>
-          <p className={styles.bannerSubtitle}>
-            Acompanhe custos em um só lugar e decida com os números na mão.
-          </p>
-          <div className={styles.bannerFooter}>
-            &copy; {new Date().getFullYear()} AgroSaaS. Todos os direitos reservados.
-          </div>
-        </div>
-      </aside>
-
-      {/* Direita: formulário */}
+    <div className={styles.container} lang="pt-BR">
       <main className={styles.formSection}>
+        <div className={styles.formTop}>
+          <Brand />
+        </div>
         <div className={styles.formContainer}>
-          <div className={styles.mobileBrand}>
-            <span className={styles.brandMark}>
-              <Tractor size={22} />
-            </span>
-            AgroSaaS
-          </div>
-
           <header className={styles.formHeader}>
-            <h2 className={styles.formTitle}>Entrar na sua conta</h2>
-            <p className={styles.formSubtitle}>
-              Use o e-mail e a senha do seu cadastro para abrir o painel.
-            </p>
+            <h1 className={styles.formTitle}>Bem-vindo<br />de volta<span>.</span></h1>
+            <p className={styles.formSubtitle}>Entre para acompanhar sua fazenda.</p>
           </header>
-
-          <form className={styles.form} onSubmit={handleLogin} noValidate={false}>
+          <form className={styles.form} onSubmit={handleLogin} aria-busy={loading}>
             <div className={styles.inputGroup}>
-              <label htmlFor="email" className={styles.label}>
-                E-mail
-              </label>
+              <label className={styles.label} htmlFor="email">E-mail</label>
               <div className={styles.inputWrapper}>
-                <Mail size={18} className={styles.inputIcon} />
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={styles.input}
-                  placeholder="contato@fazenda.com"
-                  aria-invalid={!!error}
-                  required
-                />
+                <input className={styles.input} id="email" name="email" type="email" autoComplete="username"
+                  autoCapitalize="none" spellCheck={false} placeholder="seu@email.com" required
+                  value={email} disabled={loading} onChange={event => { setEmail(event.target.value); setError(''); }} />
               </div>
             </div>
-
             <div className={styles.inputGroup}>
-              <label htmlFor="password" className={styles.label}>
-                Senha
-              </label>
+              <label className={styles.label} htmlFor="password">Senha</label>
               <div className={styles.inputWrapper}>
-                <Lock size={18} className={styles.inputIcon} />
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`${styles.input} ${styles.passwordInput}`}
-                  placeholder="Digite sua senha"
-                  aria-invalid={!!error}
-                  required
-                />
-                <button
-                  type="button"
-                  className={styles.toggleButton}
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                <input className={`${styles.input} ${styles.passwordInput}`} id="password" name="password"
+                  type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Digite sua senha"
+                  value={password} required disabled={loading} onChange={event => { setPassword(event.target.value); setError(''); }} />
+                <button className={styles.toggleButton} type="button" disabled={loading} aria-controls="password"
+                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} onClick={() => setShowPassword(visible => !visible)}>
+                  {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
                 </button>
               </div>
             </div>
-
-            {error && (
-              <div className={styles.errorBox} role="alert">
-                <AlertCircle size={18} />
-                <p style={{ margin: 0 }}>{error}</p>
-              </div>
-            )}
-
+            {error && <div role="alert" className={styles.errorBox}><AlertCircle size={17} aria-hidden="true" /><span>{error}</span></div>}
             <button type="submit" className={styles.submitButton} disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 size={20} className={styles.spinner} /> Entrando...
-                </>
-              ) : (
-                <>
-                  Entrar <ArrowRight size={20} />
-                </>
-              )}
+              {loading ? <>Entrando… <Loader2 size={18} className={styles.spinner} aria-hidden="true" /></>
+                : <>Entrar <ArrowRight size={18} aria-hidden="true" /></>}
             </button>
           </form>
+          <div className={styles.divider}>ou</div>
+          <Link to="/demo" className={styles.demoLink}>Explorar demonstração <ArrowUpRight size={16} aria-hidden="true" /></Link>
         </div>
+        <footer className={styles.formFooter}><LockKeyhole size={14} aria-hidden="true" /> Acesso protegido</footer>
       </main>
+      <aside className={styles.banner} aria-label="Gestão da fazenda">
+        <svg className={styles.inkFilter} aria-hidden="true" focusable="false">
+          <defs>
+            <filter id="lavoura-verde" colorInterpolationFilters="sRGB">
+              {/* Soften the scan lines and map the photo's shadows and highlights to green and cream. */}
+              <feGaussianBlur stdDeviation="0 .85" edgeMode="duplicate" />
+              <feComponentTransfer>
+                <feFuncR type="gamma" amplitude="1.9" exponent=".7" offset="-.2" />
+                <feFuncG type="gamma" amplitude="1.9" exponent=".7" offset="-.2" />
+              </feComponentTransfer>
+              <feColorMatrix type="matrix" values="
+                .67 .19 0 0 .12
+                .51 .13 0 0 .32
+                .56 .16 0 0 .20
+                0   0   0 1 0" />
+            </filter>
+          </defs>
+        </svg>
+        <video className={styles.bannerImage} poster="/login-lavoura-poster.webp" autoPlay muted loop playsInline aria-hidden="true">
+          <source src="/login-lavoura.mp4" type="video/mp4" media="(prefers-reduced-motion: no-preference)" />
+        </video>
+        <div className={styles.bannerContent}>
+          <p className={styles.bannerSubtitle}>Gestão da fazenda</p>
+          <p className={styles.bannerTitle}>Do talhão à<br /><em>colheita.</em></p>
+        </div>
+      </aside>
     </div>
   );
 }

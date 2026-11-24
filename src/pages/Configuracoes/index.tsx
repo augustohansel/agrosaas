@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { Globe, Map as MapIcon, Settings as SettingsIcon, Pencil, Trash2, AlertTriangle } from 'lucide-react';
 import { Layout } from '../../components/Layout';
 import { CustomSelect } from '../../components/CustomSelect';
-import { useFarm } from '../../contexts/FarmContext';
+import { useFarm, useFarmScope } from '../../contexts/FarmContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { updateFarm, deleteFarm } from '../../features/farms/services/api';
 import styles from './styles.module.css';
 
 export function Configuracoes() {
-  const { farms, refreshFarms } = useFarm();
+  const { refreshFarms } = useFarm();
+  const { visible: farms } = useFarmScope();
   const { t, lang } = useTranslation();
   const [activeTab, setActiveTab] = useState<'preferences' | 'farms'>('preferences');
 
@@ -90,7 +91,7 @@ export function Configuracoes() {
   return (
     <Layout>
       <div className={styles.container}>
-        <div className={styles.header}>
+        <div className={`page-heading ${styles.header}`}>
           <div className={styles.titleGroup}>
             <h1 className={styles.title}>{t('menuSettings')}</h1>
             <p className={styles.description}>{t('settingsDesc')}</p>
@@ -122,8 +123,8 @@ export function Configuracoes() {
               
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
-                  <label>{t('langLabel')}</label>
-                  <CustomSelect 
+                  <label htmlFor="configuracoes-langLabel">{t('langLabel')}</label>
+                  <CustomSelect id="configuracoes-langLabel" 
                     value={language}
                     onChange={(val) => handlePreferenceChange('language', val, setLanguage)}
                     options={[
@@ -135,8 +136,8 @@ export function Configuracoes() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label>{t('currencyLabel')}</label>
-                  <CustomSelect 
+                  <label htmlFor="configuracoes-currencyLabel">{t('currencyLabel')}</label>
+                  <CustomSelect id="configuracoes-currencyLabel" 
                     value={currency}
                     onChange={(val) => handlePreferenceChange('currency', val, setCurrency)}
                     options={[
@@ -147,8 +148,8 @@ export function Configuracoes() {
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label>{t('areaLabel')}</label>
-                  <CustomSelect 
+                  <label htmlFor="configuracoes-areaLabel">{t('areaLabel')}</label>
+                  <CustomSelect id="configuracoes-areaLabel" 
                     value={areaUnit}
                     onChange={(val) => handlePreferenceChange('areaUnit', val, setAreaUnit)}
                     options={[
@@ -234,7 +235,7 @@ export function Configuracoes() {
                     type="text"
                     autoFocus
                     required
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e4e4e7', fontSize: '0.875rem', outline: 'none' }}
+                    className={styles.nameInput}
                     value={newFarmName}
                     onChange={e => setNewFarmName(e.target.value)}
                     onFocus={e => e.target.select()}

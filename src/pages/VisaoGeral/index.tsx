@@ -7,13 +7,20 @@ import 'leaflet-draw';
 
 import { Layout } from '../../components/Layout';
 import { useFarm } from '../../contexts/FarmContext';
-import { supabase } from '../../services/supabase';
+import { getTransactions } from '../../features/transactions/services/api';
 import { getPlots, type Plot } from '../../features/plots/services/api';
 import { CustomSelect } from '../../components/CustomSelect';
 import { useTranslation } from '../../hooks/useTranslation';
 import styles from './styles.module.css';
 
-const PIE_COLORS = ['#16a34a', '#84cc16', '#eab308', '#f97316', '#14b8a6', '#06b6d4', '#f59e0b'];
+const PIE_COLORS = ['#498268', '#c2944f', '#688ba8', '#b46c60', '#859b5e', '#a18aaf', '#569795'];
+const tooltipSurface = {
+  background: 'var(--color-surface)',
+  color: 'var(--color-text-main)',
+  border: '1px solid var(--color-line)',
+  borderRadius: 12,
+  boxShadow: 'var(--shadow-floating)',
+};
 
 function getAreaValue(coordinates: any[], unit: string) {
   if (!coordinates || coordinates.length < 3) return 0;
@@ -72,29 +79,26 @@ export function VisaoGeral() {
       try {
         const allFarmIds = farms.map(f => f.id);
         
-        let transQuery = supabase.from('transactions').select('*, plots(name)').order('transaction_date', { ascending: true });
-        if (activeFarmId === 'all') {
-          transQuery = transQuery.in('farm_id', allFarmIds);
-        } else {
-          transQuery = transQuery.eq('farm_id', activeFarmId);
+        const [entries, plotsData] = await Promise.all([
+          getTransactions(activeFarmId, undefined, allFarmIds),
+          getPlots(activeFarmId, allFarmIds),
+        ]);
+        if (current) {
+          setTransactions(entries.reverse());
+          setPlots(plotsData);
         }
-
-        const { data: transData, error: transError } = await transQuery;
-        if (transError) throw transError;
-        setTransactions(transData || []);
-
-        const plotsData = await getPlots(activeFarmId, allFarmIds);
-        setPlots(plotsData || []);
 
       } catch (error) {
         console.error('Erro ao carregar dashboard:', error);
       } finally {
-        setIsLoading(false);
+        if (current) setIsLoading(false);
       }
     }
+    let current = true;
     fetchDashboardData();
     setSelectedMonth('all');
-  }, [activeFarmId]);
+    return () => { current = false; };
+  }, [activeFarmId, farms]);
 
   const availableMonths = Array.from(new Set(transactions.map(tItem => tItem.transaction_date.substring(0, 7)))).sort().reverse();
 
@@ -140,19 +144,20 @@ export function VisaoGeral() {
 
   const areaData = Object.values(chartDataMap);
 
+  const plotLabel = (name: string, farmId: string) => [name, activeFarmId === 'all' && farms.find(f => f.id === farmId)?.name].filter(Boolean).join(' · ');
   const plotStats = filteredTransactions.reduce((acc, tItem) => {
     if (!tItem.plot_id || !tItem.plots?.name) return acc;
 
-    const plotName = tItem.plots.name;
-    if (!acc[plotName]) {
+    const plotName = plotLabel(tItem.plots.name, tItem.farm_id);
+    if (!acc[tItem.plot_id]) {
       const plotDef = plots.find(p => p.id === tItem.plot_id);
       const pArea = plotDef ? getAreaValue(plotDef.coordinates, areaUnit) : 0;
-      acc[plotName] = { name: plotName, Receitas: 0, Despesas: 0, area: pArea };
+      acc[tItem.plot_id] = { name: plotName, Receitas: 0, Despesas: 0, area: pArea };
     }
 
     const amount = Number(tItem.amount);
-    if (tItem.type === 'income') acc[plotName].Receitas += amount;
-    else acc[plotName].Despesas += amount;
+    if (tItem.type === 'income') acc[tItem.plot_id].Receitas += amount;
+    else acc[tItem.plot_id].Despesas += amount;
 
     return acc;
   }, {} as Record<string, { name: string, Receitas: number, Despesas: number, area: number }>);
@@ -163,7 +168,7 @@ export function VisaoGeral() {
   const customDataAggregator = filteredTransactions.reduce((acc, tItem) => {
     let key = '';
     if (customChartConf.dimension === 'category') key = tCategory(tItem.category);
-    else if (customChartConf.dimension === 'plot') key = tItem.plots?.name || t('generalFarm');
+    else if (customChartConf.dimension === 'plot') key = plotLabel(tItem.plots?.name || t('generalFarm'), tItem.farm_id);
     else if (customChartConf.dimension === 'month') key = formatMonthName(tItem.transaction_date.substring(0, 7));
 
     if (!acc[key]) acc[key] = { name: key, income: 0, expense: 0, value: 0 };
@@ -195,8 +200,8 @@ export function VisaoGeral() {
       const receitaArea = data.area > 0 ? data.Receitas / data.area : 0;
 
       return (
-        <div style={{ backgroundColor: 'var(--color-surface)', padding: '1rem', border: '1px solid #e4e4e7', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-          <p style={{ fontWeight: 600, marginBottom: '0.75rem', borderBottom: '1px solid #e4e4e7', paddingBottom: '0.5rem' }}>
+        <div style={{ backgroundColor: 'var(--color-surface)', padding: '1rem', border: '1px solid var(--color-line)', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+          <p style={{ fontWeight: 600, marginBottom: '0.75rem', borderBottom: '1px solid var(--color-line)', paddingBottom: '0.5rem' }}>
             {label} <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 400 }}>({data.area} {areaLabel})</span>
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -218,27 +223,21 @@ export function VisaoGeral() {
   return (
     <Layout>
       <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>{t('dashboardTitle')}</h1>
+        <div className={`page-heading ${styles.header}`}>
+          <h1 className={styles.title}>{{pt: 'Relatórios', en: 'Reports', es: 'Informes'}[lang]}</h1>
           
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div className={styles.toolbar}>
             <button 
               onClick={() => setShowCustomChart(!showCustomChart)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                backgroundColor: showCustomChart ? 'transparent' : 'var(--color-primary)',
-                color: showCustomChart ? 'var(--color-text-main)' : 'white',
-                border: showCustomChart ? '1px solid #e4e4e7' : 'none',
-                padding: '0.625rem 1rem', borderRadius: '6px', cursor: 'pointer',
-                fontWeight: 500, fontSize: '0.875rem'
-              }}
+              className={styles.chartToggle}
+              aria-pressed={showCustomChart}
             >
               {showCustomChart ? <X size={16} /> : <Plus size={16} />}
               {showCustomChart ? 'Fechar Gráfico' : 'Criar Gráfico'}
             </button>
             
-            <div style={{ width: '200px' }}>
-              <CustomSelect 
+            <div className={styles.period}>
+              <CustomSelect ariaLabel={t('allPeriod')}
                 value={selectedMonth}
                 onChange={(val) => setSelectedMonth(val)}
                 options={[
@@ -255,35 +254,35 @@ export function VisaoGeral() {
 
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
-            <div className={styles.iconWrapper} style={{ backgroundColor: '#e0e7ff', color: '#3b36db' }}><Wallet size={24} /></div>
+            <div className={styles.iconWrapper}><Wallet size={24} /></div>
             <div className={styles.statInfo}>
               <span className={styles.statValue}>{formatCurrency(balance)}</span>
               <span className={styles.statLabel}>{t('currentBalance')}</span>
             </div>
           </div>
           <div className={styles.statCard}>
-            <div className={styles.iconWrapper} style={{ backgroundColor: '#dcfce7', color: '#10b981' }}><TrendingUp size={24} /></div>
+            <div className={`${styles.iconWrapper} ${styles.incomeIcon}`}><TrendingUp size={24} /></div>
             <div className={styles.statInfo}>
               <span className={styles.statValue}>{formatCurrency(totalIncome)}</span>
               <span className={styles.statLabel}>{t('incomes')}</span>
             </div>
           </div>
           <div className={styles.statCard}>
-            <div className={styles.iconWrapper} style={{ backgroundColor: '#fce7f3', color: '#ec4899' }}><TrendingDown size={24} /></div>
+            <div className={`${styles.iconWrapper} ${styles.expenseIcon}`}><TrendingDown size={24} /></div>
             <div className={styles.statInfo}>
               <span className={styles.statValue}>{formatCurrency(totalExpense)}</span>
               <span className={styles.statLabel}>{t('expenses')}</span>
             </div>
           </div>
           <div className={styles.statCard}>
-            <div className={styles.iconWrapper} style={{ backgroundColor: '#fff7ed', color: '#ea580c' }}><MapIcon size={24} /></div>
+            <div className={styles.iconWrapper}><MapIcon size={24} /></div>
             <div className={styles.statInfo}>
               <span className={styles.statValue}>{formatCurrency(costPerArea)}</span>
               <span className={styles.statLabel}>{t('avgCostPerArea')} / {areaLabel}</span>
             </div>
           </div>
           <div className={styles.statCard}>
-            <div className={styles.iconWrapper} style={{ backgroundColor: '#f3e8ff', color: '#8b5cf6' }}><FileText size={24} /></div>
+            <div className={styles.iconWrapper}><FileText size={24} /></div>
             <div className={styles.statInfo}>
               <span className={styles.statValue}>{transactionCount}</span>
               <span className={styles.statLabel}>{t('entries')}</span>
@@ -304,20 +303,20 @@ export function VisaoGeral() {
                       <AreaChart data={areaData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorReceitas" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#16a34a" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#16a34a" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="var(--color-success)" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0}/>
                           </linearGradient>
                           <linearGradient id="colorDespesas" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="var(--color-danger)" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="var(--color-danger)" stopOpacity={0}/>
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#a3aed0'}} />
-                        <YAxis width={90} axisLine={false} tickLine={false} tick={{fill: '#a3aed0'}} tickFormatter={(val) => `${currency === 'USD' ? '$' : 'R$'} ${val/1000}k`} />
-                        <Tooltip formatter={(value: any, name: any) => [formatCurrency(Number(value || 0)), name === 'Receitas' ? t('incomes') : t('expenses')]} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
-                        <Area type="monotone" dataKey="Despesas" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorDespesas)" />
-                        <Area type="monotone" dataKey="Receitas" stroke="#16a34a" strokeWidth={3} fillOpacity={1} fill="url(#colorReceitas)" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-line)" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'var(--color-text-muted)'}} />
+                        <YAxis width={90} axisLine={false} tickLine={false} tick={{fill: 'var(--color-text-muted)'}} tickFormatter={(val) => `${currency === 'USD' ? '$' : 'R$'} ${val/1000}k`} />
+                        <Tooltip formatter={(value: any, name: any) => [formatCurrency(Number(value || 0)), name === 'Receitas' ? t('incomes') : t('expenses')]} contentStyle={tooltipSurface} />
+                        <Area type="monotone" dataKey="Despesas" stroke="var(--color-danger)" strokeWidth={3} fillOpacity={1} fill="url(#colorDespesas)" />
+                        <Area type="monotone" dataKey="Receitas" stroke="var(--color-success)" strokeWidth={3} fillOpacity={1} fill="url(#colorReceitas)" />
                       </AreaChart>
                     </ResponsiveContainer>
                   ) : (
@@ -333,9 +332,9 @@ export function VisaoGeral() {
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie data={pieData} cx="50%" cy="45%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value" stroke="none">
-                          {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
+                          {pieData.map((entry, index) => <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />)}
                         </Pie>
-                        <Tooltip formatter={(value: any) => [formatCurrency(Number(value || 0)), t('value')]} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
+                        <Tooltip formatter={(value: any) => [formatCurrency(Number(value || 0)), t('value')]} contentStyle={tooltipSurface} />
                         <Legend iconType="circle" layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', paddingTop: '10px' }} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -352,10 +351,10 @@ export function VisaoGeral() {
                 <div style={{ width: '100%', height: 350, marginTop: '1rem' }}>
                   <ResponsiveContainer>
                     <BarChart data={plotChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 12 }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 12 }} tickFormatter={(value) => `${currency === 'USD' ? '$' : 'R$'} ${value / 1000}k`} />
-                      <Tooltip content={<CustomPlotTooltip />} cursor={{ fill: '#f4f4f5' }} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-line)" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} tickFormatter={(value) => `${currency === 'USD' ? '$' : 'R$'} ${value / 1000}k`} />
+                      <Tooltip content={<CustomPlotTooltip />} cursor={{ fill: 'var(--soft)' }} />
                       <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} formatter={(val) => val === 'Receitas' ? t('incomes') : t('expenses')} />
                       <Bar dataKey="Receitas" fill="var(--color-success, #16a34a)" radius={[4, 4, 0, 0]} maxBarSize={50} />
                       <Bar dataKey="Despesas" fill="var(--color-danger, #dc2626)" radius={[4, 4, 0, 0]} maxBarSize={50} />
@@ -367,7 +366,7 @@ export function VisaoGeral() {
 
             {/* SECÇÃO CONDICIONAL DO GRÁFICO PERSONALIZADO */}
             {showCustomChart && (
-              <div className={styles.chartCard} style={{ marginTop: '1.5rem', border: '2px dashed #e4e4e7' }}>
+              <div className={styles.chartCard} style={{ marginTop: '1.5rem', border: '1px solid var(--color-line)' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem' }}>
                   <h2 className={styles.chartTitle} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
                     <Settings2 size={20} color="var(--color-primary)" /> {t('customChart')}
@@ -375,8 +374,8 @@ export function VisaoGeral() {
                   
                   <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
                     <div style={{ width: '180px' }}>
-                      <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500, marginBottom: '0.5rem' }}>{t('metric')}</label>
-                      <CustomSelect 
+                      <label htmlFor="visaogeral-metric" style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500, marginBottom: '0.5rem' }}>{t('metric')}</label>
+                      <CustomSelect id="visaogeral-metric" 
                         value={customChartConf.metric} 
                         onChange={val => updateCustomChart('metric', val)}
                         options={[
@@ -387,8 +386,8 @@ export function VisaoGeral() {
                       />
                     </div>
                     <div style={{ width: '180px' }}>
-                      <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500, marginBottom: '0.5rem' }}>{t('dimension')}</label>
-                      <CustomSelect 
+                      <label htmlFor="visaogeral-dimension" style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500, marginBottom: '0.5rem' }}>{t('dimension')}</label>
+                      <CustomSelect id="visaogeral-dimension" 
                         value={customChartConf.dimension} 
                         onChange={val => updateCustomChart('dimension', val)}
                         options={[
@@ -399,8 +398,8 @@ export function VisaoGeral() {
                       />
                     </div>
                     <div style={{ width: '180px' }}>
-                      <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500, marginBottom: '0.5rem' }}>{t('format')}</label>
-                      <CustomSelect 
+                      <label htmlFor="visaogeral-format" style={{ display: 'block', fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 500, marginBottom: '0.5rem' }}>{t('format')}</label>
+                      <CustomSelect id="visaogeral-format" 
                         value={customChartConf.type} 
                         onChange={val => updateCustomChart('type', val)}
                         options={[
@@ -426,7 +425,7 @@ export function VisaoGeral() {
                               <Pie data={customChartData.filter((d: any) => d.value > 0)} cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={5} dataKey="value" stroke="none">
                                 {customChartData.filter((d: any) => d.value > 0).map((_: any, idx: number) => <Cell key={`pos-${idx}`} fill={PIE_COLORS[idx % PIE_COLORS.length]} />)}
                               </Pie>
-                              <Tooltip formatter={(val: any) => [formatCurrency(Number(val)), t('value')]} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
+                              <Tooltip formatter={(val: any) => [formatCurrency(Number(val)), t('value')]} contentStyle={tooltipSurface} />
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
@@ -439,7 +438,7 @@ export function VisaoGeral() {
                               <Pie data={customChartData.filter((d: any) => d.value < 0).map((d: any) => ({ ...d, absValue: Math.abs(d.value) }))} cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={5} dataKey="absValue" stroke="none">
                                 {customChartData.filter((d: any) => d.value < 0).map((_: any, idx: number) => <Cell key={`neg-${idx}`} fill={PIE_COLORS[(idx + 3) % PIE_COLORS.length]} />)}
                               </Pie>
-                              <Tooltip formatter={(val: any) => [formatCurrency(Number(val) * -1), t('value')]} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
+                              <Tooltip formatter={(val: any) => [formatCurrency(Number(val) * -1), t('value')]} contentStyle={tooltipSurface} />
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
@@ -448,20 +447,20 @@ export function VisaoGeral() {
                   ) : customChartConf.type === 'line' ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={customChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 12 }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 12 }} tickFormatter={(val) => `${currency === 'USD' ? '$' : 'R$'} ${val/1000}k`} />
-                        <Tooltip formatter={(val: any) => [formatCurrency(Number(val)), t('value')]} cursor={{ fill: '#f4f4f5' }} contentStyle={{ borderRadius: '12px', border: 'none' }} />
-                        <Line type="monotone" dataKey="value" stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 4, fill: "var(--color-primary)", strokeWidth: 2, stroke: "#fff" }} activeDot={{ r: 6 }} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-line)" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} tickFormatter={(val) => `${currency === 'USD' ? '$' : 'R$'} ${val/1000}k`} />
+                        <Tooltip formatter={(val: any) => [formatCurrency(Number(val)), t('value')]} cursor={{ fill: 'var(--soft)' }} contentStyle={tooltipSurface} />
+                        <Line type="monotone" dataKey="value" stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 4, fill: "var(--color-primary)", strokeWidth: 2, stroke: "var(--color-surface)" }} activeDot={{ r: 6 }} />
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={customChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
-                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 12 }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 12 }} tickFormatter={(val) => `${currency === 'USD' ? '$' : 'R$'} ${val/1000}k`} />
-                        <Tooltip formatter={(val: any) => [formatCurrency(Number(val)), t('value')]} cursor={{ fill: '#f4f4f5' }} contentStyle={{ borderRadius: '12px', border: 'none' }} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-line)" />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} tickFormatter={(val) => `${currency === 'USD' ? '$' : 'R$'} ${val/1000}k`} />
+                        <Tooltip formatter={(val: any) => [formatCurrency(Number(val)), t('value')]} cursor={{ fill: 'var(--soft)' }} contentStyle={tooltipSurface} />
                         <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={60}>
                           {customChartData.map((entry: any, index: number) => (
                             <Cell key={`cell-${index}`} fill={entry.value >= 0 ? 'var(--color-success, #16a34a)' : 'var(--color-danger, #dc2626)'} />

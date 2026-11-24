@@ -29,13 +29,13 @@ export function FarmProvider({ children }: { children: ReactNode }) {
         // Confirma se a fazenda guardada ainda existe na lista retornada pela API
         const isValidSavedFarm = data.find(f => f.id === savedFarmId);
 
-        if (isValidSavedFarm) {
+        if (isValidSavedFarm || savedFarmId === 'all') {
           setActiveFarmId(savedFarmId as string);
         } else {
           // Fallback para a primeira opção
           setActiveFarmId(data[0].id);
         }
-      }
+      } else { setActiveFarmId(''); }
     } catch (error) {
       console.error("Erro ao carregar fazendas", error);
     } finally {
@@ -65,4 +65,15 @@ export function FarmProvider({ children }: { children: ReactNode }) {
 // Hook personalizado para facilitar o uso
 export function useFarm() {
   return useContext(FarmContext);
+}
+
+export function useFarmScope() {
+  const { farms = [], activeFarmId } = useFarm();
+  const all = activeFarmId === 'all';
+  const selected = farms.find(f => f.id === activeFarmId);
+  const visible = all ? farms : selected ? [selected] : [];
+  const scope = visible.map(f => f.id).join(',');
+  const write = !!selected && ['owner', 'manager', 'editor'].includes(selected.role ?? '');
+  const farmName = (id: string) => farms.find(f => f.id === id)?.name ?? '';
+  return { all, selected, visible, scope, write, farmName };
 }

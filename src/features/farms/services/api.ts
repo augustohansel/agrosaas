@@ -6,6 +6,7 @@ export interface Farm {
   latitude?: number;
   longitude?: number;
   created_at: string;
+  role?: string;
 }
 
 export async function createFarm(name: string) {
@@ -46,12 +47,12 @@ export async function getMyFarms() {
     .from('farms')
     .select(`
       *,
-      farm_members!inner(user_id)
+      farm_members!inner(user_id,role)
     `)
     .eq('farm_members.user_id', userId); // <-- O filtro crucial adicionado aqui
 
   if (error) throw error;
-  return data as Farm[];
+  return data.map(farm => ({ ...farm, role: farm.farm_members[0]?.role })) as Farm[];
 }
 
 export async function updateFarmLocation(farmId: string, latitude: number, longitude: number) {

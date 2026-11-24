@@ -5,13 +5,19 @@ import { TransactionDrawer } from '../../components/TransactionDrawer';
 import { useFarm } from '../../contexts/FarmContext';
 import { getTransactions, deleteTransaction, type Transaction } from '../../features/transactions/services/api';
 import { useTranslation } from '../../hooks/useTranslation';
+import { issueMessage, useResource } from '../../shared/erpData';
 import styles from './styles.module.css';
 
+const emptyFilters = { type: '', category: '', plot: '', from: '', until: '' };
+
 export function Custos() {
+  const { activeFarmId } = useFarm();
+  return <Ledger key={activeFarmId} />;
+}
+
+function Ledger() {
   const { activeFarmId, farms } = useFarm();
   const { t, tCategory, lang } = useTranslation();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
@@ -20,11 +26,13 @@ export function Custos() {
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  const [activeCategory, setActiveCategory] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState(emptyFilters);
+  const [requestedPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   
   const activeFarm = farms.find(f => f.id === activeFarmId);
+  const writableFarms = new Set(farms.filter(f => ['owner', 'manager', 'editor'].includes(f.role ?? '')).map(f => f.id));
+  const [failure, report] = useState('');
 
   const [currency, setCurrency] = useState(localStorage.getItem('@AgroSaaS:currency') || 'BRL');
 
@@ -38,25 +46,29 @@ export function Custos() {
   const formatCurrency = (value: number) => new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value);
   const formatDate = (dateString: string) => new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(dateString + 'T12:00:00Z'));
 
-  const loadTransactions = useCallback(async () => {
-    if (!activeFarmId) return;
-    setIsLoading(true);
-    try {
-      const allFarmIds = farms.map(f => f.id);
-      const data = await getTransactions(activeFarmId, activeCategory, allFarmIds);
-      setTransactions(data);
-    } catch (error) {
-      console.error('Erro ao buscar transações:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [activeFarmId, activeCategory, farms]);
-
-  useEffect(() => {
-    loadTransactions();
+  const scope = farms.map(f => f.id).join(',');
+  const { data, error: loadError, reload: loadTransactions } = useResource(useCallback(
+    (signal: AbortSignal) => activeFarmId
+      ? getTransactions(activeFarmId, undefined, scope.split(','), signal)
+      : Promise.resolve([] as Transaction[]),
+    [activeFarmId, scope],
+  ));
+  const allRows = data ?? [];
+  const categories = [...new Set(allRows.filter(row => !filters.type || row.type === filters.type).map(row => row.category))];
+  const farmNames = new Map(farms.map(f => [f.id, f.name]));
+  const areaLabel = (row: Transaction) => [row.plots?.name || t('generalFarm'), activeFarmId === 'all' && farmNames.get(row.farm_id)].filter(Boolean).join(' · ');
+  const plots = new Map(allRows.map(row => [row.plot_id || 'general', row.plot_id ? areaLabel(row) : t('generalFarm')]));
+  const transactions = allRows.filter(row =>
+    (!filters.type || row.type === filters.type) &&
+    (!filters.category || row.category === filters.category) &&
+    (!filters.plot || (row.plot_id || 'general') === filters.plot) &&
+    (!filters.from || row.transaction_date >= filters.from) &&
+    (!filters.until || row.transaction_date <= filters.until)
+  );
+  const updateFilter = (field: keyof typeof filters, value: string) => {
+    setFilters(previous => ({ ...previous, ...(field === 'type' ? { category: '' } : {}), [field]: value }));
     setCurrentPage(1);
-  }, [loadTransactions]);
-
+  };
   const handleOpenCreate = () => {
     setTransactionToEdit(null);
     setIsDrawerOpen(true);
@@ -69,6 +81,7 @@ export function Custos() {
 
   // Abre o modal
   const handleOpenDelete = (id: string) => {
+    report('');
     setTransactionToDelete(id);
   };
 
@@ -80,7 +93,7 @@ export function Custos() {
       await deleteTransaction(transactionToDelete);
       loadTransactions();
     } catch (error) {
-      console.error("Erro ao excluir:", error);
+      report(issueMessage(error));
     } finally {
       setIsDeleting(false);
       setTransactionToDelete(null);
@@ -95,17 +108,17 @@ export function Custos() {
     
     const csvRows = transactions.map(tItem => {
       const data = tItem.transaction_date;
-      const desc = (tItem.description || '-').replace(/"/g, '""');
-      const plot = tItem.plots?.name ? tItem.plots.name : t('generalFarm');
+      const desc = tItem.description || '-';
+      const plot = areaLabel(tItem);
       const cat = tCategory(tItem.category);
       const type = tItem.type === 'income' ? t('incomeType') : t('expenseType');
       
       const val = lang === 'en' ? tItem.amount.toString() : tItem.amount.toString().replace('.', ','); 
 
-      return `"${data}","${desc}","${plot}","${cat}","${type}","${val}"`;
+      return [data, desc, plot, cat, type, val];
     });
 
-    const csvContent = [headers.map(h => `"${h}"`).join(';'), ...csvRows.map(row => row.replace(/,/g, ';'))].join('\n');
+    const csvContent = [headers, ...csvRows].map(row => row.map(cell => '"' + cell.replace(/"/g, '""') + '"').join(';')).join('\n');
     
     const blob = new Blob(["\ufeff", csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -121,40 +134,33 @@ export function Custos() {
     document.body.removeChild(link);
   };
 
-  const expensesByCategory = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((acc, t) => {
-      acc[t.category] = (acc[t.category] || 0) + Number(t.amount);
-      return acc;
-    }, {} as Record<string, number>);
-
   const totalPages = Math.ceil(transactions.length / itemsPerPage);
+  const currentPage = Math.min(requestedPage, Math.max(1, totalPages));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentTransactions = transactions.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <Layout>
       <div className={styles.container}>
-        <div className={styles.header}>
+        <div className={`page-heading ${styles.header}`}>
           <div className={styles.titleGroup}>
-            <h1 className={styles.title}>{t('finMgmtTitle')}</h1>
+            <h1 className={styles.title}>{t('entries')}</h1>
             <p className={styles.description}>
               {activeFarmId === 'all' ? t('finMgmtDescAll') : `${t('finMgmtDescSingle')} ${activeFarm?.name || ''}.`}
             </p>
           </div>
           
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div className={styles.toolbar}>
             {transactions.length > 0 && (
               <button 
-                className={styles.addButton} 
-                style={{ backgroundColor: 'transparent', color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }} 
+                className={styles.exportButton}
                 onClick={handleExportCSV}
               >
                 <Download size={20} /> {t('exportCSV')}
               </button>
             )}
 
-            {activeFarmId !== 'all' && activeFarmId && (
+            {writableFarms.has(activeFarmId) && (
               <button className={styles.addButton} onClick={handleOpenCreate}>
                 <Plus size={20} /> {t('addRecord')}
               </button>
@@ -162,22 +168,29 @@ export function Custos() {
           </div>
         </div>
 
-        {transactions.length > 0 && (
-          <div className={styles.summaryGrid}>
-            <div className={`${styles.summaryCard} ${activeCategory === 'all' ? styles.summaryCardActive : ''}`} onClick={() => setActiveCategory('all')}>
-              <div className={styles.summaryCardTitle}>{t('overview')}</div>
-              <div className={styles.summaryCardValueNeutral}>{transactions.length} {t('records')}</div>
-            </div>
-            {Object.entries(expensesByCategory).sort((a, b) => b[1] - a[1]).map(([category, total]) => (
-              <div key={category} className={`${styles.summaryCard} ${activeCategory === category ? styles.summaryCardActive : ''}`} onClick={() => setActiveCategory(category)}>
-                <div className={styles.summaryCardTitle}>{tCategory(category)}</div>
-                <div className={styles.summaryCardValue}>{formatCurrency(total)}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {isLoading ? (
+        {failure && <p role="alert">{failure}</p>}
+        <div className={styles.filters}>
+          <label>{t('type')}<select aria-label={t('type')} value={filters.type} onChange={e => updateFilter('type', e.target.value)}>
+            <option value="">{t('allTypes')}</option><option value="income">{t('incomeType')}</option><option value="expense">{t('expenseType')}</option>
+          </select></label>
+          <label>{t('category')}<select aria-label={t('category')} value={filters.category} onChange={e => updateFilter('category', e.target.value)}>
+            <option value="">{t('allCategories')}</option>{[...new Set([...categories, ...(filters.category ? [filters.category] : [])])].sort((a,b) => tCategory(a).localeCompare(tCategory(b),locale)).map(c => <option key={c} value={c}>{tCategory(c)}</option>)}
+          </select></label>
+          <label>{t('areaPlot')}<select aria-label={t('areaPlot')} value={filters.plot} onChange={e => updateFilter('plot', e.target.value)}>
+            <option value="">{t('allPlotsFilter')}</option>{[...plots].sort((a,b) => a[1].localeCompare(b[1],locale)).map(([id,name]) => <option key={id} value={id}>{name}</option>)}
+          </select></label>
+          <label>{t('filterFrom')}<input type="date" max={filters.until || undefined} value={filters.from} onChange={e => updateFilter('from', e.target.value)} /></label>
+          <label>{t('filterUntil')}<input type="date" min={filters.from || undefined} value={filters.until} onChange={e => updateFilter('until', e.target.value)} /></label>
+          <button type="button" disabled={!Object.values(filters).some(Boolean)} onClick={() => { setFilters(emptyFilters); setCurrentPage(1); }}>{t('clearFilters')}</button>
+        </div>
+        {data && <div className={styles.summaryGrid}>
+          <div className={styles.summaryCard}><span className={styles.summaryCardTitle}>{t('overview')}</span><strong>{transactions.length} {t('records')}</strong></div>
+          {(['income','expense'] as const).map(type => <div className={styles.summaryCard} key={type}>
+            <span className={styles.summaryCardTitle}>{t(type === 'income' ? 'incomes' : 'expenses')}</span>
+            <strong>{formatCurrency(transactions.filter(row => row.type === type).reduce((total,row) => total + Number(row.amount),0))}</strong>
+          </div>)}
+        </div>}
+        {loadError ? <p role="alert">{loadError} <button onClick={loadTransactions}>{t('retryFilter')}</button></p> : !data ? (
           <p style={{ color: 'var(--color-text-muted)' }}>{t('loadingRecords')}</p>
         ) : (
           <div className={styles.tableContainer}>
@@ -207,11 +220,11 @@ export function Custos() {
                       <td style={{ fontWeight: 500 }}>{tItem.description || '-'}</td>
                       <td>
                         {tItem.plots?.name ? (
-                          <span style={{ backgroundColor: 'var(--color-surface)', border: '1px solid #e4e4e7', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 500 }}>
-                            {tItem.plots.name}
+                          <span className={styles.plotTag}>
+                            {areaLabel(tItem)}
                           </span>
                         ) : (
-                          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>{t('generalFarm')}</span>
+                          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>{areaLabel(tItem)}</span>
                         )}
                       </td>
                       <td>{tCategory(tItem.category)}</td>
@@ -224,14 +237,14 @@ export function Custos() {
                       </td>
                       <td style={{ fontWeight: 600 }}>{formatCurrency(Number(tItem.amount))}</td>
                       <td>
-                        <div className={styles.actionButtons} style={{ justifyContent: 'flex-end' }}>
-                          <button className={`${styles.btnAction} ${styles.btnEdit}`} onClick={() => handleOpenEdit(tItem)}>
+                        {writableFarms.has(tItem.farm_id) && <div className={styles.actionButtons} style={{ justifyContent: 'flex-end' }}>
+                          <button aria-label="Editar lançamento" className={`${styles.btnAction} ${styles.btnEdit}`} onClick={() => handleOpenEdit(tItem)}>
                             <Pencil size={18} />
                           </button>
-                          <button className={`${styles.btnAction} ${styles.btnDelete}`} onClick={() => handleOpenDelete(tItem.id)}>
+                          {!tItem.bill && <button aria-label="Excluir lançamento" className={`${styles.btnAction} ${styles.btnDelete}`} onClick={() => handleOpenDelete(tItem.id)}>
                             <Trash2 size={18} />
-                          </button>
-                        </div>
+                          </button>}
+                        </div>}
                       </td>
                     </tr>
                   ))
@@ -243,7 +256,7 @@ export function Custos() {
               <div className={styles.tableFooter}>
                 <button 
                   className={styles.paginationButton} 
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  onClick={() => setCurrentPage(currentPage - 1)}
                   disabled={currentPage === 1}
                   style={{ opacity: currentPage === 1 ? 0.5 : 1, cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
                 >
@@ -251,12 +264,12 @@ export function Custos() {
                 </button>
                 <div className={styles.paginationPages}>
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                    <span key={page} className={`${styles.pageNumber} ${currentPage === page ? styles.pageNumberActive : ''}`} onClick={() => setCurrentPage(page)}>{page}</span>
+                    <button type="button" key={page} aria-current={currentPage === page ? 'page' : undefined} className={`${styles.pageNumber} ${currentPage === page ? styles.pageNumberActive : ''}`} onClick={() => setCurrentPage(page)}>{page}</button>
                   ))}
                 </div>
                 <button 
                   className={styles.paginationButton} 
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  onClick={() => setCurrentPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
                   style={{ opacity: currentPage === totalPages ? 0.5 : 1, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
                 >
@@ -267,8 +280,8 @@ export function Custos() {
           </div>
         )}
 
-        {activeFarmId && activeFarmId !== 'all' && (
-          <TransactionDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} farmId={activeFarmId} transactionToEdit={transactionToEdit} onSuccess={loadTransactions} />
+        {isDrawerOpen && writableFarms.has(transactionToEdit?.farm_id ?? activeFarmId) && (
+          <TransactionDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} farmId={transactionToEdit?.farm_id ?? activeFarmId} transactionToEdit={transactionToEdit} onSuccess={loadTransactions} />
         )}
 
         {/* Modal de Confirmação de Exclusão */}

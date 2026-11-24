@@ -1,8 +1,8 @@
-.container {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
+.container { display: flex; flex-direction: column; gap: 1.5rem; }
+.filters { display:flex; flex-wrap:wrap; align-items:end; gap:12px; }
+.filters label { display:grid; gap:5px; flex:1 1 130px; min-width:0; color:var(--color-text-muted); font-size:.82rem; }
+.filters :is(select,input,button) { min-width:0; min-height:40px; padding:7px 10px; border:1px solid var(--color-line); border-radius:9px; color:var(--color-text-main); background:var(--color-surface); font:inherit; }
+.filters button:disabled { opacity:.55; cursor:default; }
 
 .header {
   display: flex;
@@ -16,30 +16,31 @@
   gap: 0.25rem;
 }
 
-.title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--color-text-main);
-}
+.title { font-family: 'DM Sans', sans-serif; font-size: 1.8rem; font-weight: 600; letter-spacing: -.045em; color: var(--color-text-main); }
 
 .description {
   color: var(--color-text-muted);
 }
 
-.addButton {
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+.addButton, .exportButton {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   background-color: var(--color-primary);
   color: white;
-  padding: 0.75rem 1.25rem;
-  border-radius: var(--radius-sm);
+  padding: 0.75rem 1.1rem;
+  border-radius: 12px;
   border: none;
   font-weight: 500;
   cursor: pointer;
-  transition: 0.2s;
+  transition: background-color .16s; box-shadow: inset 0 1px 0 #ffffff24;
 }
 
+.exportButton, .btnCancel { background: var(--color-surface); color: var(--color-text-main); border: 1px solid var(--color-line); }
+.exportButton:hover, .btnCancel:hover { background: var(--soft); }
+.btnCancel { border-radius: var(--radius-sm); padding: .625rem 1rem; }
+.plotTag { display: inline-block; padding: 3px 8px; border: 1px solid var(--color-line); border-radius: 7px; background: var(--soft); font-size: .78rem; }
 .addButton:hover {
   background-color: var(--color-primary-hover);
 }
@@ -54,28 +55,21 @@
 }
 
 .summaryCard {
+  text-align: left;
   background-color: var(--color-surface);
-  border: 1px solid #e4e4e7;
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
   padding: 1rem 1.5rem;
   min-width: 200px;
   box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  transition: all 0.2s ease;
+  flex: 1;
 }
 
-.summaryCard:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-card);
-  border-color: #cbd5e1;
-}
 
-.summaryCardActive {
-  border-color: var(--color-primary);
-  background-color: var(--color-primary-light);
-}
+.summaryCardActive { border-color: var(--color-primary); background-color: var(--color-primary-light); box-shadow: inset 0 0 0 1px var(--color-primary); }
 
 .summaryCardTitle {
+  display: block;
   font-size: 0.875rem;
   color: var(--color-text-muted);
   margin-bottom: 0.5rem;
@@ -97,8 +91,8 @@
 /* Tabela Minimalista */
 .tableContainer {
   background-color: var(--color-surface);
-  border: 1px solid #e4e4e7;
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  border-radius: 18px;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
 }
@@ -110,24 +104,22 @@
 }
 
 .table th {
-  background-color: transparent;
-  padding: 1.25rem 1.5rem;
+  background-color: var(--soft);
+  padding: .9rem 1.1rem;
   font-weight: 600;
   font-size: 0.875rem;
   color: var(--color-text-muted);
-  border-bottom: 1px solid #e4e4e7;
+  border-bottom: 1px solid var(--color-line);
 }
 
 .table td {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e4e4e7;
+  padding: .9rem 1.1rem;
+  border-bottom: 1px solid var(--color-line);
   color: var(--color-text-main);
   font-size: 0.875rem;
 }
 
-.table tr:hover td {
-  background-color: #fafafa;
-}
+.table tr:hover td { background-color: var(--soft); }
 
 .badgeIncome, .badgeExpense {
   display: inline-flex;
@@ -145,7 +137,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e4e4e7;
+  border-top: 1px solid var(--color-line);
   background-color: var(--color-surface);
 }
 
@@ -154,7 +146,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  border: 1px solid #e4e4e7;
+  border: 1px solid var(--color-line);
   border-radius: var(--radius-sm);
   background-color: var(--color-surface);
   color: var(--color-text-main);
@@ -165,7 +157,7 @@
 }
 
 .paginationButton:hover:not(:disabled) {
-  background-color: #f4f4f5;
+  background-color: var(--soft);
 }
 
 .paginationPages {
@@ -183,7 +175,7 @@
 }
 
 .pageNumber:hover:not(.pageNumberActive) {
-  background-color: #f4f4f5;
+  background-color: var(--soft);
   color: var(--color-text-main);
 }
 
@@ -219,7 +211,7 @@
 }
 
 .btnDelete:hover {
-  background-color: #fee2e2;
+  background-color: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
   color: var(--color-danger);
 }
 
@@ -240,11 +232,12 @@
 
 .modalContent {
   background-color: var(--color-surface);
-  border-radius: var(--radius-md);
+  border-radius: 20px;
   padding: 1.5rem;
   width: 100%;
   max-width: 400px;
   box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-line);
   animation: popIn 0.2s ease-out;
 }
 
@@ -286,3 +279,8 @@
 .btnDeleteConfirm:hover:not(:disabled) {
   background-color: #b91c1c;
 }
+.tableContainer {overflow-x:auto}
+.table {font-variant-numeric: tabular-nums;}
+.tableFooter {gap:8px;flex-wrap:wrap;}
+@media (max-width:550px){.modalContent{max-width:calc(100% - 24px)}.summaryCard{min-width:160px}.addButton,.exportButton{padding:.65rem .8rem}}
+.header {flex-wrap:wrap;gap:12px}

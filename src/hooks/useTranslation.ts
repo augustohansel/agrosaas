@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react';
 
 const dictionary = {
   pt: {
-    menuOverview: 'Visão Geral', menuCosts: 'Gestão de Custos', menuMap: 'Mapa de Fazendas', menuSettings: 'Configurações', menuLogout: 'Sair do Sistema', controlPanel: 'Painel de Controle', newBtn: 'Nova', loading: 'A carregar...', noFarms: 'Nenhuma fazenda registada', allFarms: 'Todas as Fazendas',
+    allTypes: 'Todos os tipos', allCategories: 'Todas as categorias', allPlotsFilter: 'Todas as áreas', filterFrom: 'De', filterUntil: 'Até', clearFilters: 'Limpar filtros', retryFilter: 'Tentar novamente',
+    uncategorized: 'Sem categoria',
+    catDirect: 'Despesa direta', catInventory: 'Compra de insumos', catEquipment: 'Maquinário', catSale: 'Venda da produção',
+    menuOverview: 'Visão Geral', menuCosts: 'Gestão de Custos', menuMap: 'Mapa de Fazendas', menuSettings: 'Configurações', menuLogout: 'Sair do Sistema', controlPanel: 'Painel de Controle', newBtn: 'Nova', loading: 'A carregar...', noFarms: 'Nenhuma fazenda registrada', allFarms: 'Todas as Fazendas',
     settingsDesc: 'Gira as preferências do sistema e as suas propriedades.', globalPrefs: 'Preferências Globais', farmMgmt: 'Gestão de Propriedades', locFormatting: 'Localização e Formatação', locDesc: 'Estes ajustes afetam como os valores e métricas são exibidos no seu painel.', langLabel: 'Idioma da Interface', currencyLabel: 'Moeda Principal', areaLabel: 'Unidade de Medida (Área)', registeredFarms: 'Fazendas Registadas', farmListDesc: 'Lista de todas as propriedades associadas à sua conta.', noFarmsFound: 'Nenhuma fazenda encontrada.', createdAt: 'Criada em', renameFarm: 'Renomear', deleteFarm: 'Excluir Fazenda',
     renamePrompt: 'Novo nome para a propriedade:', confirmDel1: 'ATENÇÃO: Deseja mesmo excluir a fazenda "', confirmDel2: '"? Todos os talhões e despesas serão perdidos.', errorApi: 'Ocorreu um erro no servidor.',
     dashboardTitle: 'Dashboard', allPeriod: 'Todo o Período', currentBalance: 'Saldo Atual', incomes: 'Receitas', expenses: 'Despesas', entries: 'Lançamentos', avgCostPerArea: 'Custo Médio', loadingReports: 'A carregar relatórios...', balanceMonthly: 'Balança (Mensal)', balanceDaily: 'Balança (Diária)', noData: 'Sem dados para exibir.', expensesGeneral: 'Despesas (Geral)', noExpenses: 'Sem despesas registadas.', perfByPlot: 'Desempenho por Talhão',
-    finMgmtTitle: 'Gestão Financeira', finMgmtDescAll: 'Histórico detalhado de movimentações de todas as propriedades.', finMgmtDescSingle: 'Histórico detalhado de movimentações da', addRecord: 'Adicionar Registo', overview: 'Visão Geral', records: 'registos', loadingRecords: 'A carregar registos...', date: 'Data', description: 'Descrição', areaPlot: 'Área / Talhão', category: 'Categoria', type: 'Tipo', value: 'Valor', actions: 'Ações', noMovements: 'Nenhuma movimentação encontrada.', generalFarm: 'Geral', incomeType: 'Receita', expenseType: 'Despesa', prev: 'Anterior', next: 'Próximo',
+    finMgmtTitle: 'Gestão Financeira', finMgmtDescAll: 'Histórico detalhado de movimentações de todas as propriedades.', finMgmtDescSingle: 'Histórico detalhado de movimentações da', addRecord: 'Adicionar Registro', overview: 'Visão Geral', records: 'registros', loadingRecords: 'A carregar registros...', date: 'Data', description: 'Descrição', areaPlot: 'Área / Talhão', category: 'Categoria', type: 'Tipo', value: 'Valor', actions: 'Ações', noMovements: 'Nenhuma movimentação encontrada.', generalFarm: 'Geral', incomeType: 'Receita', expenseType: 'Despesa', prev: 'Anterior', next: 'Próximo',
     mapTitle: 'Mapeamento de Áreas', mapDescAll: 'Desenhe os seus talhões e faça a gestão das áreas de todas as propriedades.', mapDescSingle: 'Desenhe os seus talhões e faça a gestão das áreas da propriedade.', saving: 'A guardar...', cancelMarking: 'Cancelar Marcação', initialLocDone: 'Localização inicial feita (Alterar)', setInitialLoc: 'Definir Posição Inicial', mappedAreas: 'Áreas Mapeadas', noAreasDrawn: 'Nenhuma área desenhada.', rename: 'Renomear', delete: 'Excluir', clickMapToOpen: 'Clique no mapa para definir onde a câmara deve abrir', whatName: 'Qual o nome desta área (Ex: Talhão Sul, Pasto 1)?',
-    newEntry: 'Novo Lançamento', editEntry: 'Editar Registo', newEntryDesc: 'Registe uma nova receita ou despesa.', editEntryDesc: 'Atualize as informações desta movimentação.', movementType: 'Tipo de Movimentação', expenseOpt: 'Despesa (Custo)', incomeOpt: 'Receita (Venda)', areaPlotOpt: 'Área / Talhão (Opcional)', generalFarmOpt: 'Geral da Fazenda', selectPlotPlaceholder: 'Selecione um talhão', categoryOpt: 'Categoria', descOpt: 'Descrição (Opcional)', descPlaceholder: 'Ex: Compra de Ureia', valueBRL: 'Valor', dateOpt: 'Data', cancelBtn: 'Cancelar', saveBtn: 'Salvar Registo', updateBtn: 'Atualizar Registo',
+    newEntry: 'Novo Lançamento', editEntry: 'Editar Registro', newEntryDesc: 'Registre uma nova receita ou despesa.', editEntryDesc: 'Atualize as informações desta movimentação.', movementType: 'Tipo de Movimentação', expenseOpt: 'Despesa (Custo)', incomeOpt: 'Receita (Venda)', areaPlotOpt: 'Área / Talhão (Opcional)', generalFarmOpt: 'Geral da Fazenda', selectPlotPlaceholder: 'Selecione um talhão', categoryOpt: 'Categoria', descOpt: 'Descrição (Opcional)', descPlaceholder: 'Ex: Compra de Ureia', valueBRL: 'Valor', dateOpt: 'Data', cancelBtn: 'Cancelar', saveBtn: 'Salvar Registro', updateBtn: 'Atualizar Registro',
     catFertilizers: 'Adubos e Fertilizantes', catSeeds: 'Sementes', catPesticides: 'Defensivos (Agrotóxicos)', catFuel: 'Combustível', catLabor: 'Mão de Obra', catMaintenance: 'Manutenção de Máquinas', catAnimalNutrition: 'Nutrição Animal', catVet: 'Veterinário', catTaxes: 'Impostos', catOther: 'Outros', catSoy: 'Venda de Soja', catCorn: 'Venda de Milho', catGrains: 'Venda de Grãos', catLivestock: 'Venda de Gado', catVegetables: 'Hortaliças',
     newFarmTitle: 'Criar Nova Fazenda', newFarmNameLabel: 'Nome da Propriedade', newFarmPlaceholder: 'Ex: Fazenda Esperança', createBtn: 'Criar Fazenda',
     exportCSV: 'Exportar CSV',
@@ -18,6 +21,9 @@ const dictionary = {
     fmtBar: 'Barras', fmtLine: 'Linha', fmtPie: 'Pizza',
     },
   en: {
+    allTypes: 'All types', allCategories: 'All categories', allPlotsFilter: 'All areas', filterFrom: 'From', filterUntil: 'Through', clearFilters: 'Clear filters', retryFilter: 'Try again',
+    uncategorized: 'Uncategorized',
+    catDirect: 'Direct expense', catInventory: 'Input purchases', catEquipment: 'Machinery', catSale: 'Production sales',
     menuOverview: 'Dashboard', menuCosts: 'Cost Management', menuMap: 'Farm Map', menuSettings: 'Settings', menuLogout: 'Logout', controlPanel: 'Control Panel', newBtn: 'New', loading: 'Loading...', noFarms: 'No registered farms', allFarms: 'All Farms',
     settingsDesc: 'Manage system preferences and your properties.', globalPrefs: 'Global Preferences', farmMgmt: 'Property Management', locFormatting: 'Localization & Formatting', locDesc: 'These settings affect how values and metrics are displayed on your dashboard.', langLabel: 'Interface Language', currencyLabel: 'Main Currency', areaLabel: 'Area Unit', registeredFarms: 'Registered Farms', farmListDesc: 'List of all properties associated with your account.', noFarmsFound: 'No farms found.', createdAt: 'Created at', renameFarm: 'Rename', deleteFarm: 'Delete Farm',
     renamePrompt: 'New name for the property:', confirmDel1: 'WARNING: Do you really want to delete the farm "', confirmDel2: '"? All plots and records will be lost.', errorApi: 'A server error occurred.',
@@ -34,6 +40,9 @@ const dictionary = {
     fmtBar: 'Bar', fmtLine: 'Line', fmtPie: 'Pie',
     },
   es: {
+    allTypes: 'Todos los tipos', allCategories: 'Todas las categorías', allPlotsFilter: 'Todas las áreas', filterFrom: 'Desde', filterUntil: 'Hasta', clearFilters: 'Limpiar filtros', retryFilter: 'Reintentar',
+    uncategorized: 'Sin categoría',
+    catDirect: 'Gasto directo', catInventory: 'Compra de insumos', catEquipment: 'Maquinaria', catSale: 'Venta de la producción',
     menuOverview: 'Visión General', menuCosts: 'Gestión de Costos', menuMap: 'Mapa de Fincas', menuSettings: 'Configuración', menuLogout: 'Cerrar Sesión', controlPanel: 'Panel de Control', newBtn: 'Nueva', loading: 'Cargando...', noFarms: 'Ninguna finca registrada', allFarms: 'Todas las Fincas',
     settingsDesc: 'Gestiona las preferencias del sistema y tus propiedades.', globalPrefs: 'Preferencias Globales', farmMgmt: 'Gestión de Propiedades', locFormatting: 'Localización y Formato', locDesc: 'Estos ajustes afectan cómo se muestran los valores y métricas en tu panel.', langLabel: 'Idioma de la Interfaz', currencyLabel: 'Moneda Principal', areaLabel: 'Unidad de Medida (Área)', registeredFarms: 'Fincas Registradas', farmListDesc: 'Lista de todas las propiedades asociadas a tu cuenta.', noFarmsFound: 'No se encontraron fincas.', createdAt: 'Creada el', renameFarm: 'Renombrar', deleteFarm: 'Eliminar Finca',
     renamePrompt: 'Nuevo nombre para la propiedad:', confirmDel1: 'ATENCIÓN: ¿Realmente deseas eliminar la finca "', confirmDel2: '"? Se perderán todos los lotes y registros.', errorApi: 'Ocurrió un error en el servidor.',
@@ -55,6 +64,7 @@ type Language = keyof typeof dictionary;
 export type TranslationKey = keyof typeof dictionary.pt;
 
 const categoryMapping: Record<string, TranslationKey> = {
+  direct: 'catDirect', inventory: 'catInventory', equipment: 'catEquipment', sale: 'catSale', other: 'catOther',
   'Adubos e Fertilizantes': 'catFertilizers', 'Sementes': 'catSeeds', 'Defensivos (Agrotóxicos)': 'catPesticides', 'Combustível': 'catFuel', 'Mão de Obra': 'catLabor', 'Manutenção de Máquinas': 'catMaintenance', 'Nutrição Animal': 'catAnimalNutrition', 'Veterinário': 'catVet', 'Impostos': 'catTaxes', 'Outros': 'catOther', 'Venda de Soja': 'catSoy', 'Venda de Milho': 'catCorn', 'Venda de Grãos': 'catGrains', 'Venda de Gado': 'catLivestock', 'Hortaliças': 'catVegetables',
 };
 
@@ -70,7 +80,14 @@ export function useTranslation() {
   }, []);
 
   const t = (key: TranslationKey) => dictionary[lang]?.[key] || dictionary.pt[key] || key;
-  const tCategory = (catName: string) => { const key = categoryMapping[catName]; return key ? t(key) : catName; };
+  const tCategory = (catName: string) => {
+    const key = categoryMapping[catName];
+    if (!key) return catName;
+    if (['direct', 'inventory', 'equipment', 'sale', 'other'].includes(catName)) {
+      return `${t('uncategorized')} · ${t(key)}`;
+    }
+    return t(key);
+  };
 
   return { t, tCategory, lang };
 }

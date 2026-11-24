@@ -18,11 +18,7 @@
   gap: 0.25rem;
 }
 
-.title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--color-text-main);
-}
+.title { font-family: 'DM Sans', sans-serif; font-size: 1.8rem; font-weight: 600; letter-spacing: -.045em; color: var(--color-text-main); }
 
 .description {
   color: var(--color-text-muted);
@@ -32,10 +28,11 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: var(--color-primary);
+  background: var(--erp-button);
+  box-shadow: var(--erp-edge);
   color: white;
   padding: 0.75rem 1.25rem;
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   border: none;
   font-weight: 500;
   cursor: pointer;
@@ -59,12 +56,12 @@
 .sidebar {
   width: 320px;
   background-color: var(--color-surface);
-  border: 1px solid #e4e4e7;
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  border-radius: 18px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
 }
 
 .sidebarHeader {
@@ -72,8 +69,8 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1.25rem;
-  border-bottom: 1px solid #e4e4e7;
-  background-color: #fafafa;
+  border-bottom: 1px solid var(--color-line);
+  background-color: var(--soft);
 }
 
 .sidebarHeader h3 {
@@ -84,7 +81,7 @@
 }
 
 .sidebarIcon {
-  color: var(--color-primary);
+  color: var(--erp-emphasis);
 }
 
 .plotList {
@@ -108,7 +105,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  background-color: #f4f4f5;
+  background-color: var(--soft);
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   transition: 0.2s;
@@ -116,17 +113,17 @@
 }
 
 .plotItem:hover {
-  border-color: #d4d4d8;
-  background-color: #ffffff;
+  border-color: var(--color-line);
+  background-color: var(--color-surface);
 }
 
 .plotItemActive {
-  border-color: var(--color-primary);
+  border-color: var(--erp-emphasis);
   background-color: var(--color-primary-light);
 }
 
 .plotItemActive .plotName {
-  color: var(--color-primary);
+  color: var(--erp-emphasis);
   font-weight: 600;
 }
 
@@ -145,15 +142,15 @@
 .plotArea {
   font-size: 0.7rem;
   color: var(--color-text-muted);
-  background-color: #e4e4e7;
+  background-color: var(--color-line);
   padding: 0.1rem 0.4rem;
   border-radius: 4px;
   font-weight: 500;
 }
 
 .plotItemActive .plotArea {
-  background-color: #c7d2fe;
-  color: var(--color-primary);
+  background-color: var(--soft);
+  color: var(--erp-emphasis);
 }
 
 .plotActions {
@@ -179,7 +176,7 @@
 
 .btnEdit:hover {
   background-color: var(--color-primary-light);
-  color: var(--color-primary);
+  color: var(--erp-emphasis);
 }
 
 .btnDelete {
@@ -187,7 +184,7 @@
 }
 
 .btnDelete:hover {
-  background-color: #fee2e2;
+  background-color: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
   color: var(--color-danger);
 }
 
@@ -196,7 +193,7 @@
   flex: 1;
   border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid #e4e4e7;
+  border: 1px solid var(--color-line);
   position: relative;
   z-index: 1;
   cursor: grab;
@@ -229,6 +226,7 @@
 
 /* --- Modal de Confirmação e Edição --- */
 .modalOverlay {
+  padding: 12px;
   position: fixed;
   top: 0;
   left: 0;
@@ -243,6 +241,9 @@
 }
 
 .modalContent {
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  border: 1px solid var(--color-line);
   background-color: var(--color-surface);
   border-radius: var(--radius-md);
   padding: 1.5rem;
@@ -278,7 +279,7 @@
 
 .btnCancel {
   padding: 0.625rem 1rem;
-  border: 1px solid #e4e4e7;
+  border: 1px solid var(--color-line);
   background-color: transparent;
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
@@ -288,13 +289,13 @@
 }
 
 .btnCancel:hover:not(:disabled) {
-  background-color: #f4f4f5;
+  background-color: var(--soft);
 }
 
 .btnDeleteConfirm {
   padding: 0.625rem 1rem;
   border: none;
-  background-color: var(--color-danger);
+  background-color: #984137;
   color: white;
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
@@ -314,7 +315,8 @@
 .btnSave {
   padding: 0.625rem 1rem;
   border: none;
-  background-color: var(--color-primary);
+  background: var(--erp-button);
+  box-shadow: var(--erp-edge);
   color: white;
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
@@ -323,10 +325,53 @@
 }
 
 .btnSave:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
+  filter: brightness(.95);
 }
 
 .btnSave:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
+.mapWrapper {min-height:320px}
+.mapElement :global(.leaflet-control-zoom) {border:1px solid var(--color-line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow-floating)}
+.mapElement :global(.leaflet-control-zoom a) {background:var(--color-surface);color:var(--color-text-main);border-color:var(--color-line)}
+.container {height:auto; min-width:0; gap:14px}
+.header {align-items:center; gap:18px; padding:4px 0 8px}
+.farmName {color:var(--erp-emphasis);font:600 .69rem/1.45 ui-monospace,monospace;letter-spacing:.09em;text-transform:uppercase}
+.title {font-size:clamp(1.8rem,3vw,2.6rem);line-height:1.15}
+.description {font-size:.9rem}
+.headerActions,.toolbar,.toolbar label,.secondary,.camera,.camera button,.search {display:flex;align-items:center;gap:8px}
+.headerActions,.toolbar {flex-wrap:wrap}
+.secondary,.toolbar button,.toolbar select {border:1px solid var(--color-line);border-radius:10px;background:linear-gradient(155deg,var(--color-surface),var(--soft));color:var(--color-text-main);padding:8px 10px;min-height:38px;box-shadow:var(--erp-edge)}
+.secondary {font-size:.84rem;font-weight:600}
+.toolbar {padding:10px 14px;border:1px solid var(--color-line);border-radius:15px;background:var(--color-surface);gap:12px 20px}
+.toolbar label {font-size:.8rem;color:var(--color-text-muted)}
+.toolbar select {font-weight:600;font-size:.82rem}
+.notice {margin:0;padding:9px 12px;border:1px solid var(--color-line);border-inline-start:3px solid var(--erp-emphasis);border-radius:9px;background:var(--color-surface);color:var(--color-text-main);font-size:.86rem}
+.notice[role=alert] {border-inline-start-color:var(--color-danger)}
+.mainLayout {height:clamp(420px,65dvh,850px);flex:none;gap:12px}
+.sidebar {width:clamp(230px,23vw,305px)}
+.sidebarHeader {padding:16px 18px}
+.search {margin:12px 12px 0;padding:8px 10px;border:1px solid var(--color-line);border-radius:10px;color:var(--color-text-muted)}
+.search:focus-within {outline:2px solid var(--erp-emphasis);outline-offset:2px}
+.search input {min-width:0;width:100%;background:transparent;color:var(--color-text-main);border:none;font:inherit;font-size:.85rem}
+.plotList {padding:10px;gap:5px}
+.plotItem {padding:8px;gap:4px;background:transparent}
+.plotInfo {min-width:0;flex:1;display:grid;grid-template-columns:12px 1fr;gap:3px 8px;border:0;background:transparent;text-align:left;padding:3px;cursor:pointer}
+.plotInfo i {width:12px;height:12px;border-radius:4px;grid-row:span 2}
+.plotName {overflow-wrap:anywhere}
+.plotArea {background:transparent;padding:0}
+.plotItemActive,.plotItemActive:hover {background:var(--color-primary-light);border-color:color-mix(in srgb,var(--erp-emphasis) 45%,var(--color-line))}
+.camera {border:1px solid var(--color-line);position:absolute;top:12px;right:12px;z-index:750;padding:4px;border-radius:12px;background:var(--color-surface);box-shadow:var(--shadow-floating);gap:3px}
+.camera button {background:transparent;color:var(--color-text-main);padding:7px 9px;border:0;border-radius:8px;font-size:.77rem;font-weight:600;cursor:pointer}
+.camera button:hover {background:var(--soft)}
+.camera button:disabled,.header button:disabled {opacity:.55}
+.instructionBanner {top:auto;bottom:32px;width:max-content;max-width:90%;font-size:.83rem;background:#253c30}
+.colors {display:flex;align-items:center;flex-wrap:wrap;gap:6px;border:0;padding:0;margin:12px 0 18px}
+.container :is(button,select):focus-visible {outline:2px solid var(--erp-emphasis);outline-offset:2px}
+.colors legend {font-size:.83rem;margin-bottom:8px;color:var(--color-text-muted)}
+.colors button,.colors input {width:26px;height:26px;border:0;border-radius:8px;padding:0;color:white;font-weight:800;cursor:pointer}
+.colors button[aria-pressed=true] {outline:2px solid var(--color-text-main);outline-offset:2px}
+.modalContent input[type=text] {background:var(--color-surface);color:var(--color-text-main)}
+@media(max-width:900px){.mainLayout{height:auto}.sidebar{flex:none}.headerActions button{font-size:.8rem}.mapElement{min-height:320px}}
+@media(max-width:900px){.container{height:auto}.mainLayout{flex-direction:column-reverse}.sidebar{width:100%;max-height:300px}.mapWrapper{flex:none;height:50dvh}.header{align-items:flex-start;flex-wrap:wrap;gap:12px}}
